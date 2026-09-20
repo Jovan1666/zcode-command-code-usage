@@ -5,11 +5,17 @@ argument-hint: "[--md | --compact | --json | --verbose | --demo hot]"
 
 查看 Command Code 额度用量（`/quota` 的等价写法）。
 
-执行下面这段（已包含脚本定位，直接整段运行即可）：
+执行下面整段（已包含脚本定位，直接整段运行即可）：
 
 ```bash
 CC_SCRIPT="@@CC_USAGE_SCRIPT@@"
-[ -f "$CC_SCRIPT" ] || CC_SCRIPT=$(find "${HOME:-$USERPROFILE}/.zcode" -type f -name cc-usage.mjs -path '*command-code-usage*' -print -quit 2>/dev/null)
+if [ ! -f "$CC_SCRIPT" ]; then
+  for d in "$HOME/.zcode" "$HOME/.claude" "$HOME/.agents" "$HOME/.codex"; do
+    CC_SCRIPT=$(find "$d" -type f -name cc-usage.mjs -print -quit 2>/dev/null)
+    [ -n "$CC_SCRIPT" ] && break
+  done
+fi
+[ -f "$CC_SCRIPT" ] || { echo "找不到 cc-usage.mjs，插件可能未正确安装或已被移动。"; exit 2; }
 node "$CC_SCRIPT" $ARGUMENTS
 ```
 

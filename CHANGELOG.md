@@ -3,6 +3,28 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-09-21
+
+Cross-agent support, so the plugin is not tied to one editor.
+
+### Added
+- **Claude Code support.** The plugin now ships a `.claude-plugin/plugin.json` alongside the ZCode
+  manifest, and a strict-clean `.claude-plugin/marketplace.json` that passes
+  `claude plugin validate --strict` with zero warnings.
+- **Cross-platform CI** (`.github/workflows/check.yml`) running on Ubuntu, Windows and macOS: the
+  release gate, offline smoke tests for every output mode, an install-and-discover check against a
+  throwaway home directory, and the installer's conflict guard.
+- **`scripts/check.mjs`** — a release gate shared by CI and local runs. It compares the duplicated
+  fields between the ZCode and Claude manifests, enforces version consistency across all five
+  places that carry a version, checks the command/skill files against ZCode's actual parsing rules
+  (name pattern, allowed frontmatter keys, reserved command names), and fails on any leaked secret
+  or machine-specific path.
+
+### Changed
+- The command body's script lookup now searches the known agent directories — `~/.zcode`,
+  `~/.claude`, `~/.agents`, `~/.codex` — instead of only ZCode's, so the same command works
+  wherever the plugin was installed from.
+
 ## [1.0.0] — 2026-09-21
 
 First public release.
