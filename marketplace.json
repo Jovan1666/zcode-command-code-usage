@@ -1,0 +1,34 @@
+{
+  "name": "command-code-usage",
+  "plugins": [
+    {
+      "name": "command-code-usage",
+      "source": "./command-code-usage",
+      "version": "1.0.0",
+      "description": "See your Command Code plan usage (5-hour and weekly rolling windows, monthly credits or balance) right inside the ZCode conversation, with a remaining-requests estimate and a burn-rate warning. Requires a Command Code plan.",
+      "displayName": "Command Code Usage",
+      "displayName_i18n": {
+        "zh-CN": "Command Code 额度面板"
+      },
+      "description_i18n": {
+        "zh-CN": "在 ZCode 对话里直接查看 Command Code 套餐用量（5 小时与每周滚动窗口、月度额度或余额），含剩余次数估算与超限预警。需要 Command Code 套餐。"
+      },
+      "category": "utilities",
+      "homepage": "https://github.com/Jovan1666/zcode-command-code-usage",
+      "author": {
+        "name": "Jovan1666",
+        "url": "https://github.com/Jovan1666"
+      },
+      "examplePrompts": [
+        "/quota",
+        "How much Command Code quota do I have left, and is it enough to finish this task?"
+      ],
+      "examplePrompts_i18n": {
+        "zh-CN": [
+          "/quota",
+          "我 Command Code 额度还剩多少？够不够把这个任务跑完？"
+        ]
+      }
+    }
+  ]
+}
