@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-09-21
+
+### Changed
+- **`/quota` costs about 43% fewer tokens.** The command body was cut from 731 to 311 characters,
+  and the agent is now told not to restate the panel — it is already visible from the tool call.
+  Measured cost per invocation dropped from roughly 680 to 390 tokens.
+- Documented the cost, and the zero-token alternative (`--serve` in the built-in browser pane), in
+  both READMEs.
+
 ## [1.1.0] — 2026-09-21
 
 Cross-agent support, so the plugin is not tied to one editor.

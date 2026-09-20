@@ -137,6 +137,32 @@ You can also skip the command entirely and just ask:
 The bundled skill teaches the agent to fetch the panel and to answer "is it enough" from the
 remaining-requests estimate rather than from the monthly balance.
 
+## Token cost, and the zero-token alternative
+
+A custom command is ultimately a prompt. `/quota` injects its body, the agent runs the script, and
+the panel text passes through the model. Measured, one invocation costs roughly **390 tokens**: about
+100 for the command body, 80 for the tool call, 180 for the panel text, 40 for the reply. The body is
+deliberately short and the agent is told **not to restate the panel** — it is already visible from the
+tool call. (The first version restated it and cost about 680.)
+
+**To spend no tokens at all**, run the panel as a local page and open it in ZCode's built-in browser
+pane:
+
+```bash
+node command-code-usage/scripts/cc-usage.mjs --serve
+# then open http://127.0.0.1:8787/
+```
+
+It refreshes every 30 seconds, shows the same ring gauges, and never touches the model. This is the
+only zero-token option available: ZCode exposes no plugin-contributed in-app widget, and a hook cannot
+display content either — the hook record it renders carries status, duration and name, with no output
+field (verified in `resources/glm/zcode.cjs`).
+
+ZCode *does* support inline shell expansion in command bodies (`` !`cmd` `` or a fenced `!` block),
+which runs locally before the prompt is built. It is not used here: on Windows that shell is
+`cmd.exe`, not bash, so it would only work with a hard-coded script path and would fail hard for
+marketplace installs. Not worth the fragility for the ~80 tokens it would save.
+
 ## How the two useful numbers are derived
 
 **"Room for ≈ N more requests"** = remaining allowance ÷ your average cost per request *this
