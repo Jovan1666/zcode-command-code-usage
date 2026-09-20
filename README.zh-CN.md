@@ -1,8 +1,9 @@
-# Command Code Usage —— ZCode 插件
+# Command Code Usage
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[English](README.md) · [简体中文](README.zh-CN.md) · [![Check](https://github.com/Jovan1666/zcode-command-code-usage/actions/workflows/check.yml/badge.svg)](https://github.com/Jovan1666/zcode-command-code-usage/actions/workflows/check.yml)
 
-在 ZCode 对话里直接看 **Command Code** 套餐还剩多少用量，不用离开对话、不用开网页。
+在对话里直接看 **Command Code** 套餐还剩多少用量，不用离开对话、不用开网页。
+**ZCode 与 Claude Code 都支持。**
 
 Command Code 的套餐（Go / GOAT / Pro / Max / Teams）除了月度额度，还压着两个**滚动窗口**：
 5 小时上限和每周上限。窗口从你第一次请求开始计时，到点重置，**不跟自然日/周走**，用量也不跨
@@ -51,14 +52,15 @@ ZCode 没有给插件留常驻显示位，这不是猜的，是它自己的代�
 
 ## 环境要求
 
-- **ZCode 桌面端**（需要支持 `commands` 与 `skills` 的版本）。
+- **一个支持命令与技能的 agent** —— ZCode 或 Claude Code，两者都已验证；清单与目录用的是
+  标准布局（`.zcode-plugin` / `.claude-plugin`），其他兼容的 agent 应该也能用。
 - **一个 Command Code 套餐。** 没有套餐就没数可读。如果你是按量计费而非订阅，插件照样能用，
   只是显示余额而不是窗口。
 - **Node.js** —— 只用来跑插件自带的脚本。脚本只用 Node 内置模块，**不需要 `npm install`**。
 
 ## 安装
 
-### 方式 A：从插件市场装（推荐）
+### ZCode：从插件市场装（推荐）
 
 1. ZCode 里打开 **插件市场 → 添加 → 添加插件市场**。
 2. 粘贴本仓库：
@@ -70,7 +72,14 @@ ZCode 没有给插件留常驻显示位，这不是猜的，是它自己的代�
 3. 到 **个人 → Command Code Usage → 安装**。
 4. **完全退出 ZCode 再打开**，然后新建任务，输入 `/quota`。
 
-### 方式 B：本地安装脚本
+### Claude Code
+
+```
+/plugin marketplace add Jovan1666/zcode-command-code-usage
+/plugin install command-code-usage@command-code-usage
+```
+
+### 方式 B：本地安装脚本（ZCode，不走市场）
 
 先克隆仓库，然后：
 
@@ -92,10 +101,10 @@ node command-code-usage/scripts/verify-discoverable.cjs .            # 验证 ZC
 安装器**绝不覆盖你自己的内容**：它记录每次写入的哈希，只有「在自己安装清单里、且自写入后没被
 改动过」的文件才更新。你自己写的同名命令、或你事后改过的文件，都会被拒绝并说明原因，而不是被清掉。
 
-> **两种方式别同时用。** 用户级副本的发现优先级高于插件，同时存在时本地副本会遮蔽市场版本，
-> 市场的「更新」按钮对你的命令就不生效了。要切到市场方式，先跑一次 `--uninstall`。
+> **本地安装与市场安装别同时用。** 用户级副本的发现优先级高于插件，同时存在时本地副本会遮蔽市场
+> 版本，市场的「更新」按钮对你的命令就不生效了。要切到市场方式，先跑一次 `--uninstall`。
 
-### 装完之后：重启 ZCode
+### 在 ZCode 里装完之后：重启应用
 
 ZCode 在**会话启动时**对命令与技能清单做快照。应用运行期间新建的插件目录，光靠「新建任务」是
 读不到的——而且 ZCode 有托盘图标，关窗口往往只是最小化、进程还活着。**要完全退出**
@@ -211,11 +220,15 @@ mcp, mode, model, new, plan, plugin, plugins, resume, rewind, skill, target, var
 
 ```
 .
-├── marketplace.json                  市场清单（仓库根目录即市场根目录）
+├── marketplace.json                  ZCode 侧市场清单（仓库根目录即市场根目录）
+├── .claude-plugin/marketplace.json   Claude 侧市场清单（共享字段完全一致，strict 零警告）
 ├── README.md / README.zh-CN.md
-├── LICENSE
+├── LICENSE / CHANGELOG.md
+├── .github/workflows/check.yml       CI：三平台矩阵 + 发布检查 + 离线冒烟
+├── scripts/check.mjs                 发布门禁（CI 与本地共用同一个脚本）
 └── command-code-usage/               插件本体
-    ├── .zcode-plugin/plugin.json
+    ├── .zcode-plugin/plugin.json     ZCode 读这个（优先）
+    ├── .claude-plugin/plugin.json    Claude Code 读这个
     ├── commands/
     │   ├── quota.md                  /quota
     │   └── usage.md                  /usage
@@ -226,18 +239,50 @@ mcp, mode, model, new, plan, plugin, plugins, resume, rewind, skill, target, var
         └── verify-discoverable.cjs   诊断：复刻 ZCode 的命令解析器
 ```
 
+### 为什么有些文件有两份
+
+插件清单和市场清单各有一个 ZCode 副本、一个 Claude Code 副本——因为两个生态看的位置不同、
+接受的字段也不同：
+
+- ZCode 先读 `.zcode-plugin/plugin.json`，读不到才回退到 `.claude-plugin/`；Claude Code 只读
+  `.claude-plugin/`。
+- ZCode 的市场条目支持 `displayName_i18n`、`description_i18n`、`examplePrompts`、`examplePrompts_i18n`
+  这些展示字段，而 Claude Code 会把这些视为未知字段并给出警告，`--strict` 下直接失败。
+
+所以 ZCode 那份保留了本地化显示名（中文用户看到中文标签），Claude 那份保持 strict 零警告，
+以便通过审核流水线跑的同一个校验。两份共有的字段——name、version、description、source、
+category、homepage、author——完全一致，一旦漂移 `scripts/check.mjs` 会让构建失败。提交前跑：
+
+```bash
+node scripts/check.mjs
+```
+
 `commands/*.md` 里含有 `@@CC_USAGE_SCRIPT@@` 这个占位符。用安装脚本装时，它会被替换成
-`cc-usage.mjs` 的绝对路径；从市场安装时占位符保持原样，命令正文里的 shell 片段会自动回退到
-探测脚本位置——所以两条安装路线都能用。
+`cc-usage.mjs` 的绝对路径；走任一市场安装时占位符保持原样，命令正文里的 shell 片段会自动到
+各 agent 的已知目录（`~/.zcode`、`~/.claude`、`~/.agents`、`~/.codex`）里找脚本——所以每条
+安装路线都能用。
+
+## 分发状态
+
+| 渠道 | 状态 |
+|---|---|
+| **把本仓库添加为市场** | **已可用。** 在任一 agent 里粘贴 `Jovan1666/zcode-command-code-usage`。 |
+| ZCode 官方市场（`zcode-plugins-official`） | 未投稿。它的描述写着收录社区插件，但 Z.ai 没有公开的投稿流程——没有表单，应用里也没有可提交的入口。 |
+| Claude Code 社区市场（`anthropics/claude-plugins-community`） | 未投稿。那个仓库是只读镜像，投稿走 Console 表单、需要账号登录，所以这是维护者的动作，CI 或脚本做不到。官方市场是邀请制：文档明确写了没有申请流程。 |
 
 ## 状态与范围
 
-已在 Windows + ZCode 桌面端验证：接口取数、全部输出模式（终端、`--md`、`--compact`、`--json`、
+已在 Windows 上验证：接口取数、全部输出模式（终端、`--md`、`--compact`、`--json`、
 `--from-json`、HTML、serve）、各账号形态分支、凭证解析、所有错误路径，以及安装器的冲突处理
-（全新安装、重复安装、被改过的文件、外来同名文件）。
+（全新安装、重复安装、被改过的文件、外来同名文件）。另外还做过一次从已发布仓库出发的
+干净环境端到端验证（克隆 → 安装 → 发现 → 执行）。
 
-在真实 ZCode 会话里安装并执行命令，目前是维护者本机验证；**尚未做过第二人在干净机器上的验证**。
-如果遇到问题，请带上 `verify-discoverable.cjs .` 的输出和你看到的确切报错开 issue。
+CI 另外在 **Ubuntu、Windows、macOS** 三个平台跑发布门禁、离线冒烟、安装并发现校验，
+以及安装器的冲突保护。
+
+尚未验证：第二个人通过市场界面安装，以及在真实 Claude Code 会话里执行命令。
+如果遇到问题，请带上 `node scripts/check.mjs` 的输出（命令发现类问题用
+`command-code-usage/scripts/verify-discoverable.cjs .`）和你看到的确切报错开 issue。
 
 与 Command Code 官方无关。它通过官方 CLI 使用的同一批端点读取你自己账号的用量，
 不做代理、不修改、也不向其他任何地方传输数据。

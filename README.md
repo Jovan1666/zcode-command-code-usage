@@ -1,8 +1,9 @@
-# Command Code Usage — a ZCode plugin
+# Command Code Usage
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[English](README.md) · [简体中文](README.zh-CN.md) · [![Check](https://github.com/Jovan1666/zcode-command-code-usage/actions/workflows/check.yml/badge.svg)](https://github.com/Jovan1666/zcode-command-code-usage/actions/workflows/check.yml)
 
-Check how much of your **Command Code** plan you have left, without leaving the ZCode conversation.
+Check how much of your **Command Code** plan you have left, without leaving the conversation.
+Works in **ZCode** and **Claude Code**.
 
 Command Code plans (Go / GOAT / Pro / Max / Teams) pace your monthly credits with two **rolling
 windows**: a 5-hour cap and a weekly cap. A window opens on your first request and resets a fixed
@@ -54,7 +55,9 @@ plugin puts the panel. No browser tab, no website to poll.
 
 ## Requirements
 
-- **ZCode desktop** (any recent version; the plugin needs `commands` + `skills` support).
+- **An agent that supports commands and skills** — ZCode or Claude Code. Both are verified; the
+  layout is the standard `.zcode-plugin` / `.claude-plugin` one, so other compatible agents should
+  work too.
 - **A Command Code plan.** Without one the panel has nothing to show. If you are on
   pay-as-you-go rather than a subscription, it still works but shows a balance instead of windows.
 - **Node.js** — only to run the bundled scripts. They use nothing but Node built-ins, so there is no
@@ -62,9 +65,9 @@ plugin puts the panel. No browser tab, no website to poll.
 
 ## Install
 
-### Option A — from the marketplace (recommended)
+### ZCode — from the marketplace (recommended)
 
-1. In ZCode open **Plugin Marketplace → Add → Add Plugin Marketplace**.
+1. Open **Plugin Marketplace → Add → Add Plugin Marketplace**.
 2. Paste this repository:
 
    ```
@@ -74,7 +77,14 @@ plugin puts the panel. No browser tab, no website to poll.
 3. Go to **Personal → Command Code Usage → Install**.
 4. **Fully quit and reopen ZCode**, then start a new task and run `/quota`.
 
-### Option B — local install script
+### Claude Code
+
+```
+/plugin marketplace add Jovan1666/zcode-command-code-usage
+/plugin install command-code-usage@command-code-usage
+```
+
+### Option B — local install script (ZCode, no marketplace needed)
 
 Clone the repo, then:
 
@@ -98,11 +108,11 @@ only updates a file that is both in its own install manifest *and* unchanged sin
 same-named command you wrote yourself, or a file you edited afterwards, is refused with a reason
 instead of being clobbered.
 
-> **Do not use both options at once.** User-scope copies are discovered before plugin-provided ones,
-> so a local copy shadows the marketplace version and the Update button stops affecting your
-> commands. Run `--uninstall` before switching to the marketplace route.
+> **Do not use both a local install and the marketplace route at once.** User-scope copies are
+> discovered before plugin-provided ones, so a local copy shadows the marketplace version and the
+> Update button stops affecting your commands. Run `--uninstall` before switching.
 
-### After installing: restart ZCode
+### After installing in ZCode: restart the app
 
 ZCode snapshots the command and skill catalogue when a session starts. A plugin directory created
 while the app is running is not picked up by merely opening a new task — and since ZCode keeps a
@@ -225,11 +235,15 @@ rewind, skill, target, variant`.
 
 ```
 .
-├── marketplace.json                  marketplace catalogue (repo root = marketplace root)
+├── marketplace.json                  ZCode-catalogue (repo root = marketplace root)
+├── .claude-plugin/marketplace.json   Claude-catalogue (identical shared fields, strict-clean)
 ├── README.md / README.zh-CN.md
-├── LICENSE
+├── LICENSE / CHANGELOG.md
+├── .github/workflows/check.yml       CI: 3 platforms, release checks, offline smoke tests
+├── scripts/check.mjs                 release gate (shared with CI)
 └── command-code-usage/               the plugin
-    ├── .zcode-plugin/plugin.json
+    ├── .zcode-plugin/plugin.json     manifest read by ZCode (checked first)
+    ├── .claude-plugin/plugin.json    manifest read by Claude Code
     ├── commands/
     │   ├── quota.md                  /quota
     │   └── usage.md                  /usage
@@ -240,21 +254,54 @@ rewind, skill, target, variant`.
         └── verify-discoverable.cjs   diagnostic: re-implements ZCode's command parser
 ```
 
-`commands/*.md` contain the token `@@CC_USAGE_SCRIPT@@`, which the installer substitutes with the
-absolute path of `cc-usage.mjs` at install time. When the plugin is installed from the marketplace
-instead, that token is left as-is and the shell snippet falls back to locating the script — so both
-routes work.
+### Why some files exist twice
+
+The plugin and the catalogue each have a ZCode copy and a Claude Code copy, because the two
+ecosystems look in different places and accept different fields:
+
+- ZCode reads `.zcode-plugin/plugin.json` first, then falls back to `.claude-plugin/`.
+  Claude Code only reads `.claude-plugin/`.
+- ZCode's catalogue accepts presentational fields Claude Code ignores —
+  `displayName_i18n`, `description_i18n`, `examplePrompts`, `examplePrompts_i18n`. Claude Code's
+  validator reports those as unknown fields, and fails under `--strict`.
+
+So the ZCode catalogue keeps the localized display names (its users see Chinese labels), and the
+Claude catalogue stays strict-clean so it passes the validator the review pipeline runs. Everything
+the two share — name, version, description, source, category, homepage, author — is identical, and
+`scripts/check.mjs` fails the build if that ever drifts. Run it before committing:
+
+```bash
+node scripts/check.mjs
+```
+
+`commands/*.md` contain the token `@@CC_USAGE_SCRIPT@@`. The install script substitutes it with the
+absolute path of `cc-usage.mjs`; when the plugin arrives through either marketplace the token is left
+alone and the shell snippet searches the known agent directories (`~/.zcode`, `~/.claude`,
+`~/.agents`, `~/.codex`) for the script instead — so every route works.
+
+## Distribution status
+
+| Channel | State |
+|---|---|
+| **This repo added as a marketplace** | **Live.** Paste `Jovan1666/zcode-command-code-usage` in either agent. |
+| ZCode official marketplace (`zcode-plugins-official`) | Not submitted. Its description says it carries community plugins, but Z.ai exposes no public submission process — there is no form, and nothing in the app to submit through. |
+| Claude Code community marketplace (`anthropics/claude-plugins-community`) | Not submitted. That repo is a read-only mirror; submissions go through a Console form that needs an account login, so it is a maintainer action, not something CI or a script can do. The official marketplace is invitation-only: its docs state there is no application process. |
 
 ## Status and scope
 
-Tested on Windows with the ZCode desktop app: the API integration, all output modes (terminal,
-`--md`, `--compact`, `--json`, `--from-json`, HTML, serve), the account-shape branches, credential
-resolution, every error path, and the installer's conflict handling (fresh install, re-install,
-edited file, foreign file).
+Tested on Windows: the API integration, all output modes (terminal, `--md`, `--compact`, `--json`,
+`--from-json`, HTML, serve), the account-shape branches, credential resolution, every error path,
+and the installer's conflict handling (fresh install, re-install, edited file, foreign file).
+A clean-machine install from the published repo was also exercised end to end (clone → install →
+discovery → execution).
 
-Installing and running the command inside a live ZCode session is exercised by the maintainer; a
-clean-machine verification by a second user has not been done. If something misbehaves, please open
-an issue with the output of `verify-discoverable.cjs .` and the exact message you saw.
+CI additionally runs the release gate, the offline smoke tests, an install-and-discover check, and
+the installer's conflict guard on **Ubuntu, Windows and macOS**.
+
+Not yet verified: a second person installing through a marketplace UI, and running the commands
+inside a live Claude Code session. If something misbehaves, please open an issue with the output of
+`node scripts/check.mjs` (or `command-code-usage/scripts/verify-discoverable.cjs .` for discovery
+problems) and the exact message you saw.
 
 Not affiliated with Command Code. It reads your own account's usage through the same endpoints the
 official CLI uses; it does not proxy, modify or transmit anything anywhere else.
