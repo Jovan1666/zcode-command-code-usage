@@ -29,7 +29,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { exec } from 'node:child_process';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const DEFAULT_API_BASE = 'https://api.commandcode.ai';
 const PROVIDER_MATCH = /commandcode\.ai/i;
 
