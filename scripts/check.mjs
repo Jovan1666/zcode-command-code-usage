@@ -117,6 +117,8 @@ const zcodeEntryAllowed = new Set([
   'name', 'source', 'version', 'description', 'displayName', 'displayName_i18n', 'description_i18n',
   'icon', 'category', 'homepage', 'privacyPolicy', 'termsOfService', 'heroImage', 'author',
   'examplePrompts', 'examplePrompts_i18n', 'requiresPaidPlan',
+  // 官方 zai-org/zcode-plugins 也在用的字段
+  'keywords', 'license', 'repository',
 ]);
 const unknownZ = Object.keys(zMarket.plugins[0]).filter((k) => !zcodeEntryAllowed.has(k));
 ok(unknownZ.length === 0, 'ZCode 市场条目字段均受支持', unknownZ.join(', '));
