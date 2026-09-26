@@ -1,0 +1,21 @@
+# 依赖与构建产物
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# 运行本插件生成的产物
+command-code-usage.html
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 本地临时与调试
+*.log
+tmp/
+.tmp/
